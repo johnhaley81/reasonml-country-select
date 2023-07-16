@@ -1,0 +1,20 @@
+opam-version: "2.0"
+synopsis: "Country Selection using React"
+description: "An application showcasing a react component that allows you to select a country."
+maintainer: ["John Haley"]
+authors: ["John Haley"]
+license: "MIT"
+homepage: "https://github.com/johnhaley81/reasonml-country-select"
+bug-reports: "https://github.com/johnhaley81/reasonml-country-select/issues"
+depends: [
+  "ocaml" {>= "4.14.0" & < "5.0.0"}
+  "reason" {>= "3.8.1" & < "4.0.0"}
+  "dune" {>= "3.8"}
+  "melange" {>= "1.0.0"}
+  "reactjs-jsx-ppx" {>= "1.0.0"}
+  "reason-react" {>= "0.11.0"}
+  "ocaml-lsp-server" {dev}
+  "dot-merlin-reader" {dev}
+  "odoc" {with-doc}
+]
+dev-repo: "git+https://github.com/johnhaley81/reasonml-country-select.git"

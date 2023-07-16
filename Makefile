@@ -1,4 +1,4 @@
-project_name = melange-opam-template
+project_name = reasonml-country-select
 
 DUNE = opam exec -- dune
 

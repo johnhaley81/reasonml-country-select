@@ -2,20 +2,21 @@
 
 (using melange 0.1)
 
-(name melange-opam-template)
+(name reasonml-country-select)
 
 (license "MIT")
 
-(maintainers <your_name>)
+(maintainers "John Haley")
 
-(authors <your_name>)
+(authors "john@haley.io")
 
-(homepage https://github.com/your/project)
+(homepage https://github.com/johnhaley81/reasonml-country-select)
 
-(bug_reports https://github.com/your/project/issues)
+(bug_reports https://github.com/johnhaley81/reasonml-country-select/issues)
 
 (package
  (allow_empty)
- (name melange-opam-template)
- (synopsis "Melange project")
- (description "Minimal melange project"))
+ (name reasonml-country-select)
+ (synopsis "Country Selection using React")
+ (description
+  "An application showcasing a react component that allows you to select a country."))
