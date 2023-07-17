@@ -13,8 +13,13 @@ depends: [
   "melange" {>= "1.0.0"}
   "reactjs-jsx-ppx" {>= "1.0.0"}
   "reason-react" {>= "0.11.0"}
+  "relude" {dev}
   "ocaml-lsp-server" {dev}
   "dot-merlin-reader" {dev}
   "odoc" {with-doc}
 ]
 dev-repo: "git+https://github.com/johnhaley81/reasonml-country-select.git"
+pin-depends: [
+  [ "relude.dev" "git+https://github.com/trite/relude.git#dunification" ]
+  [ "bastet.dev" "git+https://github.com/johnhaley81/bastet.git#6c8f53a9da55254691df49bddf96b279b38be204" ]
+]
