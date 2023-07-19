@@ -1,14 +1,22 @@
+open ReactUtils;
+
 module App = {
   [@react.component]
   let make = () =>
-    ["Hello " ++ World.name ++ "!", "This is React! With Relude!"]
-    |> Relude.List.map(greeting => <h1> greeting->React.string </h1>)
-    |> Relude.List.toArray
-    |> React.array;
+    <>
+      {["Hello " ++ World.name ++ "!", "This is React! With Relude!!"]
+       |> List.map(greeting => <h1> <S> greeting </S> </h1>)
+       |> List.toArray
+       |> React.array}
+      <FlagIcons
+        countryCode={FlagIcons.CountryCode.make("gr") |> Option.getOrThrow}
+        // displayFormat=Square
+      />
+    </>;
 };
 
 ReactDOM.querySelector("#root")
-|> Relude.Option.foldLazy(
+|> Option.foldLazy(
      () =>
        Js.Console.error(
          "Failed to start React: couldn't find the #root element",
