@@ -3,8 +3,9 @@
  (alias react)
  (libraries reason-react world relude)
  (modules :standard \ hello)
+ (compile_flags :standard -open Relude.Globals)
  (preprocess
-  (pps reactjs-jsx-ppx))
+  (pps reactjs-jsx-ppx melange.ppx))
  (module_systems es6))
 
 (melange.emit
