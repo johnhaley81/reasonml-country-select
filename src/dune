@@ -1,7 +1,7 @@
 (melange.emit
  (target output)
  (alias react)
- (libraries reason-react world relude)
+ (libraries reason-react world relude bs_css bs_css_emotion)
  (modules :standard \ hello)
  (compile_flags :standard -open Relude.Globals)
  (preprocess

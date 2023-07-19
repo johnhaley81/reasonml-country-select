@@ -9,6 +9,7 @@ bug-reports: "https://github.com/johnhaley81/reasonml-country-select/issues"
 depends: [
   "ocaml" {>= "4.14.0" & < "5.0.0"}
   "reason" {>= "3.8.1" & < "4.0.0"}
+  "rescript-syntax" {>= 1.0.0}
   "dune" {>= "3.8"}
   "melange" {>= "1.0.0"}
   "reactjs-jsx-ppx" {>= "1.0.0"}

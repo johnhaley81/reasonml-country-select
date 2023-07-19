@@ -4,6 +4,8 @@
     "serve": "webpack serve --open --mode development --entry ./_build/default/src/output/src/ReactApp.js"
   },
   "dependencies": {
+    "bs-css": "^16.1.0",
+    "bs-css-emotion": "^5.1.0",
     "flag-icons": "^6.7.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
