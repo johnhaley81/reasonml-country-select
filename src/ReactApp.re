@@ -1,18 +1,18 @@
-open ReactUtils;
-
 module App = {
+  module Styles = {
+    open Css;
+
+    let wrapper =
+      style([
+        alignItems(flexStart),
+        backgroundColor(CommonStyles.Colors.Light.Background.box),
+        display(inlineFlex),
+        padding2(~v=rem(8.0), ~h=rem(16.5626)),
+      ]);
+  };
+
   [@react.component]
-  let make = () =>
-    <>
-      {["Hello " ++ World.name ++ "!", "This is React! With Relude!!"]
-       |> List.map(greeting => <h1> <S> greeting </S> </h1>)
-       |> List.toArray
-       |> React.array}
-      <FlagIcons
-        countryCode={FlagIcons.CountryCode.make("gr") |> Option.getOrThrow}
-        // displayFormat=Square
-      />
-    </>;
+  let make = () => <div className=Styles.wrapper> <CountrySelect /> </div>;
 };
 
 ReactDOM.querySelector("#root")
