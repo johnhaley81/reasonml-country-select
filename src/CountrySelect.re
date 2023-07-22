@@ -140,6 +140,15 @@ let make = (~className=?, ~country) => {
     )
     |> Array.catOption;
 
+  let country =
+    options
+    |> Array.find((Country.{amount: _, countryCode, label: _}) =>
+         countryCode
+         |> FlagIcons.CountryCode.toString
+         |> Option.pure
+         |> Option.eqBy(String.eq, country)
+       );
+
   <Dropdown
     className={className |> ReactUtils.extendBaseStyle(Styles.wrapper)}
     isOpen
