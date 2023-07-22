@@ -1,7 +1,8 @@
 module TriangleNeutral = {
   [@react.component]
-  let make = () =>
+  let make = (~className=?) =>
     <svg
+      ?className
       xmlns="http://www.w3.org/2000/svg"
       width="8"
       height="8"
@@ -18,8 +19,9 @@ module TriangleNeutral = {
 
 module Search = {
   [@react.component]
-  let make = () =>
+  let make = (~className=?) =>
     <svg
+      ?className
       xmlns="http://www.w3.org/2000/svg"
       width="14"
       height="14"

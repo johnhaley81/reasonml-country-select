@@ -12,7 +12,16 @@ module App = {
   };
 
   [@react.component]
-  let make = () => <div className=Styles.wrapper> <CountrySelect /> </div>;
+  let make = () => {
+    let country =
+      CountrySelect.Country.make(
+        ~amount=10.0,
+        ~countryCode="us",
+        ~label="United States",
+      );
+
+    <div className=Styles.wrapper> <CountrySelect country /> </div>;
+  };
 };
 
 ReactDOM.querySelector("#root")

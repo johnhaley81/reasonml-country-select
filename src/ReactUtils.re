@@ -1,7 +1,5 @@
-let mergeClassNames = className =>
-  List.appendOption(className)
-  >> List.intersperse(" ")
-  >> List.foldLeft((++), "");
+let extendBaseStyle = (baseStyle, extendedStyle) =>
+  [Some(baseStyle), extendedStyle] |> List.catOptions |> Css.merge;
 
 // At Qwick we tried to follow the "least powerful tool for the job" philosophy and how we interpretted that was to
 // default to patterns that gave you the least amount of data you needed in a specific part of the code and to leverage
@@ -12,18 +10,20 @@ let mergeClassNames = className =>
 // In following that philosophy, we wrapped all of the internal react hooks to both provide less data unless needed,
 // to leverage IO to reduce race conditions, and to leverage the type system in ways that also reduced run-time errors
 
-let useMappableState = getInitialValue => {
-  let (value, setter) = React.useState(getInitialValue);
+let useMappableState = intitalState => {
+  let (state, set) = React.useState(intitalState);
+  let set =
+    React.useCallback0(newStateFn =>
+      IO.suspend(() => set(newStateFn)) |> IO.mapError(ignore)
+    );
 
-  let map = React.useCallback0(map => IO.suspend(() => setter(map)));
-
-  (value, map);
+  (state, set);
 };
 
 let useState = getInitialValue => {
   let (value, map) = useMappableState(getInitialValue);
 
-  let set = React.useCallback(const >> map);
+  let set = React.useCallback0(const >> map);
 
   (value, set);
 };
@@ -34,6 +34,12 @@ let useState = getInitialValue => {
 module S = {
   [@react.component]
   let make = (~children) => React.string(children);
+};
+
+module F = {
+  [@react.component]
+  let make = (~children, ~formatter=Float.toString) =>
+    <S> {children |> formatter} </S>;
 };
 
 module Null = {

@@ -1,6 +1,6 @@
-module Colors = {
-  open Css;
+open Css;
 
+module Colors = {
   module Light = {
     module Background = {
       let box = hex("FFFFFF");
@@ -8,8 +8,8 @@ module Colors = {
     };
 
     module Border = {
-      let controlAlpha = hex("000000");
-      let lineAlpha = hex("000000");
+      let controlAlpha = (alpha: float) => `rgba((0, 0, 0, `num(alpha)));
+      let lineAlpha = (alpha: float) => `rgba((0, 0, 0, `num(alpha)));
     };
 
     module Text = {
@@ -18,4 +18,16 @@ module Colors = {
       let tertiary = hex("000000");
     };
   };
+};
+
+module Text = {
+  let defaultStyles =
+    style([
+      color(Colors.Light.Text.primary),
+      fontFamily(`custom("Arial")),
+      fontSize(rem(0.875)),
+      fontStyle(normal),
+      fontWeight(`num(400)),
+      lineHeight(rem(1.125)),
+    ]);
 };
