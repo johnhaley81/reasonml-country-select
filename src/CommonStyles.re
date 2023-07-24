@@ -4,7 +4,7 @@ module Colors = {
   module Light = {
     module Background = {
       let box = hex("FFFFFF");
-      let selected = hex("FFDBB3");
+      let selected = (alpha: float) => `rgba((255, 219, 179, `num(alpha)));
     };
 
     module Border = {

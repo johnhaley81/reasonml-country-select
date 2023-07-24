@@ -12,10 +12,13 @@ module App = {
   };
 
   [@react.component]
-  let make = () =>
+  let make = () => {
+    let (country, setCountry) = React.useState(() => None);
+
     <div className=Styles.wrapper>
-      <CountrySelect country={Some("us")} />
+      <CountrySelect country onChange={value => setCountry(const(value))} />
     </div>;
+  };
 };
 
 ReactDOM.querySelector("#root")

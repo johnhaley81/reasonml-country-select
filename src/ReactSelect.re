@@ -34,10 +34,19 @@ module Components = {
     innerProps: Js.t({.}),
   };
 
+  type optionProps('a) = {
+    data: 'a,
+    innerProps: Js.t({.}),
+    isFocused: bool,
+    isSelected: bool,
+  };
+
   [@bs.deriving abstract]
-  type t = {
+  type t('a) = {
     [@bs.as "IndicatorsContainer"] [@bs.optional]
     indicatorsContainer: indicatorsContainerProps => React.element,
+    [@bs.as "Option"] [@bs.optional]
+    option: optionProps('a) => React.element,
   };
 
   let make = t;
@@ -47,15 +56,28 @@ module Select = {
   [@bs.module "react-select"] [@react.component]
   external make:
     (
+      ~autoFocus: bool=?,
       ~className: string=?,
       ~classNames: ClassNames.t=?,
-      ~components: Components.t=?,
+      ~closeMenuOnSelect: bool=?,
+      ~components: Components.t('a)=?,
       ~defaultValue: 'a=?,
-      ~formatOptionLabel: 'a => React.element=?,
+      ~isOptionSelected: 'a => bool=?,
+      ~menuIsOpen: bool=?,
+      ~onChange: Js.Nullable.t('a) => unit=?,
+      ~onKeyDown: ReactEvent.Keyboard.t => unit=?,
       ~options: array('a),
+      ~ref: ReactDOM.Ref.t=?,
       ~placeholder: string=?,
       ~unstyled: bool=?
     ) =>
     React.element =
     "default";
+
+  let makeProps = (~onChange, ~onKeyDown) =>
+    makeProps(
+      ~onChange=
+        Js.Nullable.toOption >> onChange >> IOUtils.unsafeRunHandledAsync,
+      ~onKeyDown=onKeyDown >> IOUtils.unsafeRunHandledAsync,
+    );
 };

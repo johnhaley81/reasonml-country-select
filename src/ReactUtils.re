@@ -28,6 +28,39 @@ let useState = getInitialValue => {
   (value, set);
 };
 
+let%private useIOWrapper = (~onUnmount=?, ~onFinish=?, io) => {
+  let ioResult = ref(None);
+
+  io
+  |> IO.unsafeRunAsync(result => {
+       ioResult := result |> Option.pure;
+       result |> Option.pure |> Option.apply(onFinish) |> Option.getOrElse();
+     });
+
+  Some(
+    () =>
+      ioResult^
+      |> Option.apply(onUnmount)
+      |> Option.getOrElseLazy(IO.pure)
+      |> IOUtils.unsafeRunHandledAsync,
+  );
+};
+let useEffect0 = (~onUnmount=?, ~onFinish=?, io) =>
+  React.useEffect0(() => io |> useIOWrapper(~onUnmount?, ~onFinish?));
+let useEffect1 = (~onUnmount=?, ~onFinish=?, io, arg) =>
+  arg
+  |> Array.pure
+  |> React.useEffect1(() =>
+       arg |> io |> useIOWrapper(~onUnmount?, ~onFinish?)
+     );
+let useEffect2 = (~onUnmount=?, ~onFinish=?, io, args) =>
+  args
+  |> React.useEffect2(() =>
+       args
+       |> Relude.Function.uncurry2(io)
+       |> useIOWrapper(~onUnmount?, ~onFinish?)
+     );
+
 // We wrapped all of the React.string, React.null, etc... in components to provide a more consistent interface
 // in the codebase. This also allowed us to do things in the typesystem to avoid more runtime errors (like providing keys
 // for elements in an array)

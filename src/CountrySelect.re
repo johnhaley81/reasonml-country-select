@@ -50,15 +50,15 @@ module Dropdown = {
 
 module Country = {
   type t = {
-    amount: float,
     countryCode: FlagIcons.CountryCode.t,
     label: string,
+    value: float,
   };
 
-  let make = (~amount, ~countryCode as maybeCountryCode, ~label) =>
+  let make = (~countryCode as maybeCountryCode, ~label, ~value) =>
     maybeCountryCode
     |> FlagIcons.CountryCode.make
-    |> Option.map(countryCode => {amount, countryCode, label});
+    |> Option.map(countryCode => {countryCode, label, value});
 };
 
 module Button = {
@@ -99,7 +99,8 @@ module Button = {
   let make = (~className=?, ~country, ~onClick) =>
     <button
       className={className |> ReactUtils.extendBaseStyle(Styles.wrapper)}
-      onClick={const(onClick) >> IOUtils.unsafeRunHandledAsync}>
+      onClick={const(onClick) >> IOUtils.unsafeRunHandledAsync}
+      tabIndex=0>
       <span className=Styles.contents>
         {country
          |> Option.fold(
@@ -107,7 +108,7 @@ module Button = {
                 <div className=Styles.flagIconPlaceholder />
                 <div> <S> "None" </S> </div>
               </>,
-              ({amount: _, countryCode, label}: Country.t) =>
+              ({countryCode, label, value: _}: Country.t) =>
               <>
                 <FlagIcons className=Styles.flagIcon countryCode />
                 <div> <S> label </S> </div>
@@ -192,13 +193,16 @@ module Styles = {
       ]),
     );
 
-  let optionWrapper = (~isSelected) =>
+  let optionWrapper = (~isFocused, ~isSelected) =>
     style([
       alignItems(center),
       alignSelf(stretch),
       backgroundColor(
         isSelected
-          ? CommonStyles.Colors.Light.Background.selected : transparent,
+          ? CommonStyles.Colors.Light.Background.selected(1.0)
+          : isFocused
+              ? CommonStyles.Colors.Light.Background.selected(0.25)
+              : transparent,
       ),
       display(flexBox),
       gap(rem(0.5)),
@@ -230,37 +234,23 @@ module Styles = {
     ]);
 };
 
-let formatOptionLabel =
-    (maybeSelectedCountry, Country.{countryCode, label, amount} as country) =>
-  <div
-    className={Styles.optionWrapper(
-      ~isSelected=
-        maybeSelectedCountry |> Option.eqBy((===), country |> Option.pure),
-    )}>
-    <div className=Styles.flagAndLabelWrapper>
-      <FlagIcons countryCode />
-      <div> <S> label </S> </div>
-    </div>
-    <div className=Styles.amount> <F> amount </F> </div>
-  </div>;
+let options =
+  Country.(
+    [|
+      make(~countryCode="us", ~label="United States", ~value=10.0),
+      make(~countryCode="af", ~label="Afghanistan", ~value=200.0),
+      make(~countryCode="ca", ~label="Canada", ~value=5000.0),
+    |]
+  )
+  |> Array.catOption;
 
 [@react.component]
-let make = (~className=?, ~country) => {
+let make = (~className=?, ~country, ~onChange) => {
   let (isOpen, setIsOpen) = ReactUtils.useState(() => false);
-
-  let options =
-    Country.(
-      [|
-        make(~amount=10.0, ~countryCode="us", ~label="United States"),
-        make(~amount=200.0, ~countryCode="af", ~label="Afghanistan"),
-        make(~amount=5000.0, ~countryCode="ca", ~label="Canada"),
-      |]
-    )
-    |> Array.catOption;
 
   let country =
     options
-    |> Array.find((Country.{amount: _, countryCode, label: _}) =>
+    |> Array.find((Country.{countryCode, label: _, value: _}) =>
          countryCode
          |> FlagIcons.CountryCode.toString
          |> Option.pure
@@ -273,6 +263,7 @@ let make = (~className=?, ~country) => {
     onClose={IO.suspendIO(() => setIsOpen(false))}
     target={<Button country onClick={setIsOpen(true)} />}>
     <ReactSelect.Select
+      autoFocus=true
       classNames={ReactSelect.ClassNames.make(
         ~container=Styles.container,
         ~control=Styles.control,
@@ -288,10 +279,56 @@ let make = (~className=?, ~country) => {
                 <Icons.Search />
               </div>
             </Spread>,
+        ~option=
+          (
+            {
+              data: {countryCode, label, value} as data,
+              innerProps,
+              isFocused,
+              // So the `isSelected` prop here isn't acting the way I anticipated it so instead of relying on
+              // the internal state of react-select we going to rely on the passed in `country` prop
+              isSelected: _,
+            }:
+              ReactSelect.Components.optionProps(Country.t),
+          ) =>
+            <Spread props=innerProps>
+              <div
+                className={Styles.optionWrapper(
+                  ~isFocused,
+                  ~isSelected=
+                    {data |> Option.pure |> Option.eqBy((===), country)},
+                )}>
+                <div className=Styles.flagAndLabelWrapper>
+                  <FlagIcons countryCode />
+                  <div> <S> label </S> </div>
+                </div>
+                <div className=Styles.amount> <F> value </F> </div>
+              </div>
+            </Spread>,
         (),
       )}
-      formatOptionLabel={formatOptionLabel(country)}
       options
+      onChange={
+        Option.map(({countryCode, label: _, value: _}: Country.t) =>
+          countryCode |> FlagIcons.CountryCode.toString
+        )
+        >> IO.pure
+        >> IO.map(onChange)
+        >> IO.flatMap(() => false |> setIsOpen)
+      }
+      onKeyDown={
+        DomUtils.getKeyFromEvent
+        >> Option.map(Tuple.first)
+        >> Option.foldLazy(
+             IO.pure,
+             fun
+             | (EscapeKey: DomUtils.key) => false |> setIsOpen
+             | EnterKey
+             | ArrowUp
+             | ArrowDown => IO.pure(),
+           )
+      }
+      menuIsOpen=isOpen
       placeholder="Search"
       unstyled=true
     />
