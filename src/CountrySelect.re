@@ -50,10 +50,10 @@ module Dropdown = {
         >> Option.foldLazy(
              IO.pure,
              fun
-             | (EnterKey: DomUtils.key) => true |> setIsOpen
+             | (EnterKey: DomUtils.key)
+             | ArrowDown => true |> setIsOpen
              | EscapeKey
-             | ArrowUp
-             | ArrowDown => IO.pure(),
+             | ArrowUp => IO.pure(),
            )
         >> IOUtils.unsafeRunHandledAsync
       }
@@ -125,7 +125,7 @@ module Button = {
          |> Option.fold(
               <>
                 <div className=Styles.flagIconPlaceholder />
-                <div> <S> "None" </S> </div>
+                <div> <S> "Select a Country" </S> </div>
               </>,
               ({countryCode, label, value: _}: Country.t) =>
               <>
@@ -304,7 +304,7 @@ let make = (~className=?, ~country, ~onChange) => {
               data: {countryCode, label, value} as data,
               innerProps,
               isFocused,
-              // So the `isSelected` prop here isn't acting the way I anticipated it so instead of relying on
+              // So the `isSelected` prop here isn't acting the way I anticipated, so instead of relying on
               // the internal state of react-select we going to rely on the passed in `country` prop
               isSelected: _,
             }:
