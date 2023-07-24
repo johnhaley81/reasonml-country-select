@@ -281,7 +281,7 @@ let make = (~className=?, ~country, ~onChange) => {
     isOpen
     setIsOpen
     target={<Button country onClick={setIsOpen(true)} />}>
-    <ReactSelect.Select
+    <ReactSelect.AsyncSelect
       autoFocus=true
       classNames={ReactSelect.ClassNames.make(
         ~container=Styles.container,
@@ -326,6 +326,10 @@ let make = (~className=?, ~country, ~onChange) => {
             </Spread>,
         (),
       )}
+      defaultOptions=true
+      loadOptions={(~searchString as _) =>
+        IO.pure(options) |> IO.withDelayBefore(5000)
+      }
       options
       onChange={
         Option.map(({countryCode, label: _, value: _}: Country.t) =>

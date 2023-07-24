@@ -52,17 +52,20 @@ module Components = {
   let make = t;
 };
 
-module Select = {
-  [@bs.module "react-select"] [@react.component]
+module AsyncSelect = {
+  [@bs.module "react-select/async"] [@react.component]
   external make:
     (
       ~autoFocus: bool=?,
+      ~cacheOptions: bool=?,
       ~className: string=?,
       ~classNames: ClassNames.t=?,
       ~closeMenuOnSelect: bool=?,
       ~components: Components.t('a)=?,
+      ~defaultOptions: bool=?,
       ~defaultValue: 'a=?,
       ~isOptionSelected: 'a => bool=?,
+      ~loadOptions: string => Js.Promise.t(array('a)),
       ~menuIsOpen: bool=?,
       ~onChange: Js.Nullable.t('a) => unit=?,
       ~onKeyDown: ReactEvent.Keyboard.t => unit=?,
@@ -74,10 +77,17 @@ module Select = {
     React.element =
     "default";
 
-  let makeProps = (~onChange, ~onKeyDown) =>
+  let makeProps = (~loadOptions, ~onChange=?, ~onKeyDown=?) =>
     makeProps(
-      ~onChange=
-        Js.Nullable.toOption >> onChange >> IOUtils.unsafeRunHandledAsync,
-      ~onKeyDown=onKeyDown >> IOUtils.unsafeRunHandledAsync,
+      ~loadOptions=
+        searchString => loadOptions(~searchString) |> RJs.Promise.fromIO,
+      ~onChange=?
+        onChange
+        |> Option.map(onChange =>
+             Js.Nullable.toOption >> onChange >> IOUtils.unsafeRunHandledAsync
+           ),
+      ~onKeyDown=?
+        onKeyDown
+        |> Option.map(onKeyDown => onKeyDown >> IOUtils.unsafeRunHandledAsync),
     );
 };
