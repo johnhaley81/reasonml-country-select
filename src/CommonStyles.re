@@ -16,6 +16,11 @@ module Colors = {
       let primary = hex("333333");
       let secondary = hex("000000");
       let tertiary = hex("000000");
+
+      let secondaryWithAlpha = (alpha: float) =>
+        `rgba((0, 0, 0, `num(alpha)));
+      let tertiaryWithAlpha = (alpha: float) =>
+        `rgba((0, 0, 0, `num(alpha)));
     };
   };
 };

@@ -46,3 +46,8 @@ module Null = {
   [@react.component]
   let make = () => React.null;
 };
+
+module Spread = {
+  [@react.component]
+  let make = (~props, ~children) => React.cloneElement(children, props);
+};
