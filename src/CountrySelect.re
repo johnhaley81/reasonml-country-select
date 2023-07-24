@@ -41,10 +41,30 @@ module Dropdown = {
   };
 
   [@react.component]
-  let make = (~children, ~className=?, ~isOpen, ~target, ~onClose) =>
-    <div className={className |> ReactUtils.extendBaseStyle(Styles.wrapper)}>
+  let make = (~children, ~className=?, ~isOpen, ~target, ~setIsOpen) =>
+    <div
+      className={className |> ReactUtils.extendBaseStyle(Styles.wrapper)}
+      onKeyDown={
+        DomUtils.getKeyFromEvent
+        >> Option.map(Tuple.first)
+        >> Option.foldLazy(
+             IO.pure,
+             fun
+             | (EnterKey: DomUtils.key) => true |> setIsOpen
+             | EscapeKey
+             | ArrowUp
+             | ArrowDown => IO.pure(),
+           )
+        >> IOUtils.unsafeRunHandledAsync
+      }
+      tabIndex=0>
       target
-      {isOpen ? <> <Menu> children </Menu> <Blanket onClose /> </> : <Null />}
+      {isOpen
+         ? <>
+             <Menu> children </Menu>
+             <Blanket onClose={setIsOpen(false)} />
+           </>
+         : <Null />}
     </div>;
 };
 
@@ -99,8 +119,7 @@ module Button = {
   let make = (~className=?, ~country, ~onClick) =>
     <button
       className={className |> ReactUtils.extendBaseStyle(Styles.wrapper)}
-      onClick={const(onClick) >> IOUtils.unsafeRunHandledAsync}
-      tabIndex=0>
+      onClick={const(onClick) >> IOUtils.unsafeRunHandledAsync}>
       <span className=Styles.contents>
         {country
          |> Option.fold(
@@ -260,7 +279,7 @@ let make = (~className=?, ~country, ~onChange) => {
   <Dropdown
     ?className
     isOpen
-    onClose={IO.suspendIO(() => setIsOpen(false))}
+    setIsOpen
     target={<Button country onClick={setIsOpen(true)} />}>
     <ReactSelect.Select
       autoFocus=true
