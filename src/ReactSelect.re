@@ -53,19 +53,17 @@ module Components = {
 };
 
 module AsyncSelect = {
-  [@bs.module "react-select/async"] [@react.component]
+  [@bs.module "react-select"] [@react.component]
   external make:
     (
       ~autoFocus: bool=?,
-      ~cacheOptions: bool=?,
       ~className: string=?,
       ~classNames: ClassNames.t=?,
       ~closeMenuOnSelect: bool=?,
       ~components: Components.t('a)=?,
-      ~defaultOptions: bool=?,
       ~defaultValue: 'a=?,
+      ~isLoading: bool=?,
       ~isOptionSelected: 'a => bool=?,
-      ~loadOptions: string => Js.Promise.t(array('a)),
       ~menuIsOpen: bool=?,
       ~onChange: Js.Nullable.t('a) => unit=?,
       ~onKeyDown: ReactEvent.Keyboard.t => unit=?,
@@ -77,10 +75,8 @@ module AsyncSelect = {
     React.element =
     "default";
 
-  let makeProps = (~loadOptions, ~onChange=?, ~onKeyDown=?) =>
+  let makeProps = (~onChange=?, ~onKeyDown=?) =>
     makeProps(
-      ~loadOptions=
-        searchString => loadOptions(~searchString) |> RJs.Promise.fromIO,
       ~onChange=?
         onChange
         |> Option.map(onChange =>

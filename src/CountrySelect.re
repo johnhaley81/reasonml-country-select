@@ -79,6 +79,35 @@ module Country = {
     maybeCountryCode
     |> FlagIcons.CountryCode.make
     |> Option.map(countryCode => {countryCode, label, value});
+
+  let url = "https://gist.githubusercontent.com/rusty-key/659db3f4566df459bd59c8a53dc9f71f/raw/4127f9550ef063121c564025f6d27dceeb279623/counties.json";
+
+  let fetchCountries =
+    url
+    |> Fetch.fetch
+    |> IO.flatMap(Fetch.json)
+    |> IO.map(
+         Js.Json.decodeArray
+         >> Option.getOrElse([||])
+         >> Array.mapOption(Js.Json.decodeObject)
+         >> Array.mapOption(dict =>
+              Option.Infix.(
+                (
+                  (countryCode, label) =>
+                    make(~countryCode, ~label, ~value=0.0)
+                )
+                <$> (
+                  Js.Dict.get(dict, "value")
+                  |> Option.flatMap(Js.Json.decodeString)
+                )
+                <*> (
+                  Js.Dict.get(dict, "label")
+                  |> Option.flatMap(Js.Json.decodeString)
+                )
+              )
+            )
+         >> Array.catOption,
+       );
 };
 
 module Button = {
@@ -116,21 +145,38 @@ module Button = {
   };
 
   [@react.component]
-  let make = (~className=?, ~country, ~onClick) =>
+  let make = (~className=?, ~countries, ~onClick, ~selectedCountry) =>
     <button
       className={className |> ReactUtils.extendBaseStyle(Styles.wrapper)}
       onClick={const(onClick) >> IOUtils.unsafeRunHandledAsync}>
       <span className=Styles.contents>
-        {country
-         |> Option.fold(
+        {countries
+         |> AsyncResult.foldByValue(
               <>
                 <div className=Styles.flagIconPlaceholder />
-                <div> <S> "Select a Country" </S> </div>
+                <div> <S> "Loading..." </S> </div>
               </>,
-              ({countryCode, label, value: _}: Country.t) =>
+              Array.find((Country.{countryCode, label: _, value: _}) =>
+                countryCode
+                |> FlagIcons.CountryCode.toString
+                |> Option.pure
+                |> Option.eqBy(String.eq, selectedCountry)
+              )
+              >> Option.fold(
+                   <>
+                     <div className=Styles.flagIconPlaceholder />
+                     <div> <S> "Select a Country" </S> </div>
+                   </>,
+                   ({countryCode, label, value: _}: Country.t) =>
+                   <>
+                     <FlagIcons className=Styles.flagIcon countryCode />
+                     <div> <S> label </S> </div>
+                   </>
+                 ),
+              _e =>
               <>
-                <FlagIcons className=Styles.flagIcon countryCode />
-                <div> <S> label </S> </div>
+                <div className=Styles.flagIconPlaceholder />
+                <div> <S> "Error in loading countries" </S> </div>
               </>
             )}
         <Icons.TriangleNeutral className=Styles.triangle />
@@ -253,34 +299,28 @@ module Styles = {
     ]);
 };
 
-let options =
-  Country.(
-    [|
-      make(~countryCode="us", ~label="United States", ~value=10.0),
-      make(~countryCode="af", ~label="Afghanistan", ~value=200.0),
-      make(~countryCode="ca", ~label="Canada", ~value=5000.0),
-    |]
-  )
-  |> Array.catOption;
-
 [@react.component]
 let make = (~className=?, ~country, ~onChange) => {
   let (isOpen, setIsOpen) = ReactUtils.useState(() => false);
+  let (options, setOptions) = ReactUtils.useState(() => AsyncResult.init);
 
-  let country =
-    options
-    |> Array.find((Country.{countryCode, label: _, value: _}) =>
-         countryCode
-         |> FlagIcons.CountryCode.toString
-         |> Option.pure
-         |> Option.eqBy(String.eq, country)
-       );
+  ReactUtils.useEffect0(
+    setOptions(AsyncResult.loading)
+    |> IO.flatMap(() => Country.fetchCountries)
+    |> IO.flatMap(AsyncResult.completeOk >> setOptions),
+  );
 
   <Dropdown
     ?className
     isOpen
     setIsOpen
-    target={<Button country onClick={setIsOpen(true)} />}>
+    target={
+      <Button
+        countries=options
+        onClick={setIsOpen(true)}
+        selectedCountry=country
+      />
+    }>
     <ReactSelect.AsyncSelect
       autoFocus=true
       classNames={ReactSelect.ClassNames.make(
@@ -301,7 +341,7 @@ let make = (~className=?, ~country, ~onChange) => {
         ~option=
           (
             {
-              data: {countryCode, label, value} as data,
+              data: {countryCode, label, value},
               innerProps,
               isFocused,
               // So the `isSelected` prop here isn't acting the way I anticipated, so instead of relying on
@@ -315,7 +355,10 @@ let make = (~className=?, ~country, ~onChange) => {
                 className={Styles.optionWrapper(
                   ~isFocused,
                   ~isSelected=
-                    {data |> Option.pure |> Option.eqBy((===), country)},
+                    {countryCode
+                     |> FlagIcons.CountryCode.toString
+                     |> Option.pure
+                     |> Option.eqBy((===), country)},
                 )}>
                 <div className=Styles.flagAndLabelWrapper>
                   <FlagIcons countryCode />
@@ -326,11 +369,7 @@ let make = (~className=?, ~country, ~onChange) => {
             </Spread>,
         (),
       )}
-      defaultOptions=true
-      loadOptions={(~searchString as _) =>
-        IO.pure(options) |> IO.withDelayBefore(5000)
-      }
-      options
+      isLoading={options |> AsyncResult.isLoading}
       onChange={
         Option.map(({countryCode, label: _, value: _}: Country.t) =>
           countryCode |> FlagIcons.CountryCode.toString
@@ -351,6 +390,7 @@ let make = (~className=?, ~country, ~onChange) => {
              | ArrowDown => IO.pure(),
            )
       }
+      options={options |> AsyncResult.getOk |> Option.getOrElse([||])}
       menuIsOpen=isOpen
       placeholder="Search"
       unstyled=true
