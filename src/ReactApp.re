@@ -19,6 +19,7 @@ module App = {
         alignItems(flexStart),
         backgroundColor(CommonStyles.Colors.Light.Background.box),
         display(inlineFlex),
+        minWidth(rem(44.0)),
         padding2(~v=rem(8.0), ~h=rem(16.5626)),
       ]);
   };

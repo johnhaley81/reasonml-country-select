@@ -62,7 +62,7 @@ module Dropdown = {
       {isOpen
          ? <>
              <Menu> children </Menu>
-             <Blanket onClose={setIsOpen(false)} />
+             <Blanket onClose={false |> setIsOpen} />
            </>
          : <Null />}
     </div>;
@@ -110,6 +110,22 @@ module Country = {
        );
 };
 
+module EmptyFlagIcon = {
+  module Styles = {
+    open Css;
+
+    let flagIconPlaceholder =
+      style([
+        height(rem(0.875)),
+        width(rem(0.875)),
+        paddingRight(rem(0.5)),
+      ]);
+  };
+
+  [@react.component]
+  let make = () => <div className=Styles.flagIconPlaceholder />;
+};
+
 module Button = {
   module Styles = {
     open Css;
@@ -134,13 +150,6 @@ module Button = {
 
     let flagIcon = style([marginRight(rem(0.5))]);
 
-    let flagIconPlaceholder =
-      style([
-        height(rem(0.875)),
-        width(rem(0.875)),
-        paddingRight(rem(0.5)),
-      ]);
-
     let triangle = style([marginLeft(rem(0.38))]);
   };
 
@@ -152,10 +161,7 @@ module Button = {
       <span className=Styles.contents>
         {countries
          |> AsyncResult.foldByValue(
-              <>
-                <div className=Styles.flagIconPlaceholder />
-                <div> <S> "Loading..." </S> </div>
-              </>,
+              <> <EmptyFlagIcon /> <div> <S> "Loading..." </S> </div> </>,
               Array.find((Country.{countryCode, label: _, value: _}) =>
                 countryCode
                 |> FlagIcons.CountryCode.toString
@@ -164,7 +170,7 @@ module Button = {
               )
               >> Option.fold(
                    <>
-                     <div className=Styles.flagIconPlaceholder />
+                     <EmptyFlagIcon />
                      <div> <S> "Select a Country" </S> </div>
                    </>,
                    ({countryCode, label, value: _}: Country.t) =>
@@ -175,13 +181,141 @@ module Button = {
                  ),
               _e =>
               <>
-                <div className=Styles.flagIconPlaceholder />
+                <EmptyFlagIcon />
                 <div> <S> "Error in loading countries" </S> </div>
               </>
             )}
         <Icons.TriangleNeutral className=Styles.triangle />
       </span>
     </button>;
+};
+
+module MenuOption = {
+  module Styles = {
+    open Css;
+
+    let container = (~isFocused, ~isSelected) =>
+      style([
+        alignItems(center),
+        alignSelf(stretch),
+        backgroundColor(
+          isSelected
+            ? CommonStyles.Colors.Light.Background.selected(1.0)
+            : isFocused
+                ? CommonStyles.Colors.Light.Background.selected(0.25)
+                : transparent,
+        ),
+        display(flexBox),
+        gap(rem(0.5)),
+        justifyContent(spaceBetween),
+        padding4(
+          ~top=rem(0.25),
+          ~right=rem(0.375),
+          ~bottom=rem(0.25),
+          ~left=rem(0.62),
+        ),
+      ]);
+
+    let flagAndLabelWrapper = style([display(flexBox)]);
+
+    let flagIcon = style([marginRight(rem(0.5))]);
+
+    let amount =
+      style([
+        alignItems(center),
+        borderRadius(rem(1.25)),
+        display(flexBox),
+        padding2(~v=rem(0.125), ~h=rem(0.25)),
+        gap(rem(0.5)),
+        color(CommonStyles.Colors.Light.Text.secondaryWithAlpha(0.52)),
+        textAlign(center),
+        fontFamily(`custom("Arial")),
+        fontSize(rem(0.75)),
+        fontStyle(normal),
+        fontWeight(`num(400)),
+        lineHeight(rem(0.875)),
+      ]);
+  };
+
+  [@react.component]
+  let make =
+      (
+        ~country,
+        ~optionProps as
+          {
+            data: {countryCode, label, value},
+            innerProps,
+            isFocused,
+            // So the `isSelected` prop here isn't acting the way I anticipated, so instead of relying on
+            // the internal state of react-select we going to rely on the passed in `country` prop
+            isSelected: _,
+          }:
+            ReactSelect.Components.optionProps(Country.t),
+      ) => {
+    // Loading the flag makes a network request and if that request isn't already cached _and_ we're making a lot of
+    // them, then it could take quite a bit of time for all of the flags to load. This stops all of the flags from
+    // being loaded at once and allows only the flags that are visible to be loaded.
+    let (isInViewport, setIsInViewport) = ReactUtils.useState(() => false);
+    let (domRef, setDomRef) = ReactUtils.useDomRef();
+
+    domRef
+    |> ReactUtils.useEffect1(
+         ~onUnmount=
+           Result.fold(IO.pure, DomUtils.IntersectionObserver.disconnect),
+         IO.flatMap(maybeEl =>
+           DomUtils.IntersectionObserver.make(
+             Array.head
+             >> Option.foldLazy(
+                  IO.pure,
+                  DomUtils.IntersectionObserver.IntersectionObserverEntry.isIntersecting
+                  >> setIsInViewport,
+                ),
+           )
+           |> IO.pure
+           |> IO.flatMap(observer =>
+                maybeEl
+                |> Option.fold(
+                     observer |> IO.pure,
+                     DomUtils.IntersectionObserver.observe(_, observer),
+                   )
+              )
+         ),
+       );
+
+    (isFocused, domRef)
+    |> ReactUtils.useEffect2(
+         DomUtils.scrollRefIntoViewOnCondition(
+           ~scrollOptions=
+             DomUtils.ScrollOptions.make(
+               ~block=`nearest,
+               ~inline=`nearest,
+               ~scrollMode=`ifNeeded,
+               (),
+             ),
+         ),
+       );
+
+    <Spread props=innerProps>
+      <div
+        className={Styles.container(
+          ~isFocused,
+          ~isSelected=
+            {countryCode
+             |> FlagIcons.CountryCode.toString
+             |> Option.pure
+             |> Option.eqBy((===), country)},
+        )}
+        ref=setDomRef>
+        <div className=Styles.flagAndLabelWrapper>
+          {isInViewport
+             ? <FlagIcons className=Styles.flagIcon countryCode />
+             : <EmptyFlagIcon />}
+          <div> <S> label </S> </div>
+        </div>
+        <div className=Styles.amount> <F> value </F> </div>
+      </div>
+    </Spread>;
+  };
 };
 
 module Styles = {
@@ -257,46 +391,6 @@ module Styles = {
         whiteSpace(nowrap),
       ]),
     );
-
-  let optionWrapper = (~isFocused, ~isSelected) =>
-    style([
-      alignItems(center),
-      alignSelf(stretch),
-      backgroundColor(
-        isSelected
-          ? CommonStyles.Colors.Light.Background.selected(1.0)
-          : isFocused
-              ? CommonStyles.Colors.Light.Background.selected(0.25)
-              : transparent,
-      ),
-      display(flexBox),
-      gap(rem(0.5)),
-      justifyContent(spaceBetween),
-      padding4(
-        ~top=rem(0.25),
-        ~right=rem(0.375),
-        ~bottom=rem(0.25),
-        ~left=rem(0.62),
-      ),
-    ]);
-
-  let flagAndLabelWrapper = style([display(flexBox), gap(rem(0.5))]);
-
-  let amount =
-    style([
-      alignItems(center),
-      borderRadius(rem(1.25)),
-      display(flexBox),
-      padding2(~v=rem(0.125), ~h=rem(0.25)),
-      gap(rem(0.5)),
-      color(CommonStyles.Colors.Light.Text.secondaryWithAlpha(0.52)),
-      textAlign(center),
-      fontFamily(`custom("Arial")),
-      fontSize(rem(0.75)),
-      fontStyle(normal),
-      fontWeight(`num(400)),
-      lineHeight(rem(0.875)),
-    ]);
 };
 
 [@react.component]
@@ -317,7 +411,7 @@ let make = (~className=?, ~country, ~onChange) => {
     target={
       <Button
         countries=options
-        onClick={setIsOpen(true)}
+        onClick={true |> setIsOpen}
         selectedCountry=country
       />
     }>
@@ -338,35 +432,7 @@ let make = (~className=?, ~country, ~onChange) => {
                 <Icons.Search />
               </div>
             </Spread>,
-        ~option=
-          (
-            {
-              data: {countryCode, label, value},
-              innerProps,
-              isFocused,
-              // So the `isSelected` prop here isn't acting the way I anticipated, so instead of relying on
-              // the internal state of react-select we going to rely on the passed in `country` prop
-              isSelected: _,
-            }:
-              ReactSelect.Components.optionProps(Country.t),
-          ) =>
-            <Spread props=innerProps>
-              <div
-                className={Styles.optionWrapper(
-                  ~isFocused,
-                  ~isSelected=
-                    {countryCode
-                     |> FlagIcons.CountryCode.toString
-                     |> Option.pure
-                     |> Option.eqBy((===), country)},
-                )}>
-                <div className=Styles.flagAndLabelWrapper>
-                  <FlagIcons countryCode />
-                  <div> <S> label </S> </div>
-                </div>
-                <div className=Styles.amount> <F> value </F> </div>
-              </div>
-            </Spread>,
+        ~option=optionProps => <MenuOption country optionProps />,
         (),
       )}
       isLoading={options |> AsyncResult.isLoading}
@@ -378,18 +444,22 @@ let make = (~className=?, ~country, ~onChange) => {
         >> IO.map(onChange)
         >> IO.flatMap(() => false |> setIsOpen)
       }
-      onKeyDown={
-        DomUtils.getKeyFromEvent
-        >> Option.map(Tuple.first)
-        >> Option.foldLazy(
+      onKeyDown={e => {
+        // The dropdown will also process the keydown and might possibly stop the
+        // menu from closing.
+        e |> ReactEvent.Keyboard.stopPropagation;
+        e
+        |> DomUtils.getKeyFromEvent
+        |> Option.map(Tuple.first)
+        |> Option.foldLazy(
              IO.pure,
              fun
              | (EscapeKey: DomUtils.key) => false |> setIsOpen
              | EnterKey
              | ArrowUp
              | ArrowDown => IO.pure(),
-           )
-      }
+           );
+      }}
       options={options |> AsyncResult.getOk |> Option.getOrElse([||])}
       menuIsOpen=isOpen
       placeholder="Search"

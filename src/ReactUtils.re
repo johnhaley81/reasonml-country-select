@@ -28,6 +28,10 @@ let useState = getInitialValue => {
   (value, set);
 };
 
+let useMemo0 = React.useMemo0;
+let useMemo1 = (fn, memoizedProps) =>
+  memoizedProps |> Array.pure |> React.useMemo1(() => fn(memoizedProps));
+
 let%private useIOWrapper = (~onUnmount=?, ~onFinish=?, io) => {
   let ioResult = ref(None);
 
@@ -60,6 +64,28 @@ let useEffect2 = (~onUnmount=?, ~onFinish=?, io, args) =>
        |> Relude.Function.uncurry2(io)
        |> useIOWrapper(~onUnmount?, ~onFinish?)
      );
+
+// While at Qwick, we found that working with refs were a little wonky, requiring a weird interface with
+// initializing it with React.useRef(Js.Nullable.null) but then having to pass it into the dom element
+// with <div ref={ReactDOM.Ref.domRef(divRef)} />. We also rarely used Js.Nullable so we did a lot of conversion
+// with Js.Nullable.t('a) to an option('a) so this takes care of that. Also since it was something that is
+// mutated and accessing the DOM directly (usually), we were able to solve some weird edge-cases by wrapping
+// it inside of an IO
+let useRef:
+  'a 'b.
+  (React.ref(Js.Nullable.t('a)) => 'b) => (IO.t(option('a), unit), 'b)
+ =
+  setter => {
+    let genericRef = React.useRef(Js.Nullable.null);
+
+    let getCurrentRef: 'a. React.ref(Js.Nullable.t('a)) => option('a) =
+      ({current}) => current |> Js.Nullable.toOption;
+
+    let refInIO = useMemo1(IO.pure >> IO.map(getCurrentRef), genericRef);
+    (refInIO, genericRef |> setter);
+  };
+
+let useDomRef = () => useRef(ReactDOM.Ref.domRef);
 
 // We wrapped all of the React.string, React.null, etc... in components to provide a more consistent interface
 // in the codebase. This also allowed us to do things in the typesystem to avoid more runtime errors (like providing keys
