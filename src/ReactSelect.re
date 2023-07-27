@@ -1,13 +1,3 @@
-// module CommonProps = {
-//   // This is pulled from:
-//   // https://github.com/JedWatson/react-select/blob/011a9d9bb38dfa65ab493927c84f40814f907226/packages/react-select/src/types.ts#L72
-//   [@bs.deriving abstract]
-//   type t = {
-//     [@bs.as "DropdownIndicator"]
-//     dropdownIndicator: unit,
-//   };
-// };
-
 module ClassNames = {
   type state;
 
@@ -25,6 +15,11 @@ module ClassNames = {
     placeholder: state => string,
   };
 
+  // [@bs.deriving abstract] creates a function that constructs the type and defaults it to be the
+  // same name as the type. It also creates a getter function for each field on the type. With that
+  // being said, I often like to wrap these in modules so as to not pollute the namespace where
+  // the type is created. I also like to rename the constructor function to `make` so I can provide
+  // a more consistent and standard interface.
   let make = t;
 };
 
@@ -52,7 +47,7 @@ module Components = {
   let make = t;
 };
 
-module AsyncSelect = {
+module Select = {
   [@bs.module "react-select"] [@react.component]
   external make:
     (

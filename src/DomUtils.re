@@ -1,3 +1,4 @@
+// Wrap these in IOs to help prevent race cases
 let blurRef = domRef => domRef->ReactDOM.domElementToObj##blur();
 let blurRef = domRef => domRef |> IO.map(Option.fold((), blurRef));
 let focusRef = domRef => domRef->ReactDOM.domElementToObj##focus();

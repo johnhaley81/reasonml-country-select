@@ -1,16 +1,9 @@
 (melange.emit
  (target output)
  (alias react)
- (libraries reason-react world relude bs_css bs_css_emotion)
- (modules :standard \ hello)
+ (libraries reason-react relude bs_css bs_css_emotion)
+ (modules :standard)
  (compile_flags :standard -open Relude.Globals)
  (preprocess
   (pps reactjs-jsx-ppx melange.ppx))
  (module_systems es6))
-
-(melange.emit
- (target node)
- (alias node)
- (libraries world)
- (modules hello)
- (module_systems commonjs))

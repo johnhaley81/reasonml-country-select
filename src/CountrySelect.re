@@ -415,7 +415,7 @@ let make = (~className=?, ~country, ~onChange) => {
         selectedCountry=country
       />
     }>
-    <ReactSelect.AsyncSelect
+    <ReactSelect.Select
       autoFocus=true
       classNames={ReactSelect.ClassNames.make(
         ~container=Styles.container,
